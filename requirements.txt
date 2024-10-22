@@ -1,0 +1,20 @@
+setuptools==63.4.1
+scikit_learn==1.3.0
+numpy==1.23.4
+pandas==1.5
+click==8.0.4
+mlflow==1.29.0
+python-dotenv==0.21.0
+scikit-optimize==0.9.0
+tqdm==4.64.1
+tune-sklearn==0.4.4
+hyperopt==0.2.7
+Flask==2.2.2
+pyod==1.1.0
+xgboost==1.7.5
+werkzeug==2.2.2
+ipykernel
+
+pptoolbox[full] @ git+ssh://git@github.com/ProfilePrint-Science/profileprint-toolbox.git@1.3.1
+
+
