@@ -14,6 +14,7 @@ pyod==1.1.0
 xgboost==1.7.5
 werkzeug==2.2.2
 ipykernel
+matplotlib == 3.7.2
 
 pptoolbox[full] @ git+ssh://git@github.com/ProfilePrint-Science/profileprint-toolbox.git@1.3.1
 
