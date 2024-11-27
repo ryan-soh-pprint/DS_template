@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     today_date = datetime.now().strftime("%y%m%d")
 
-    datafolder_path = Path ("../data/")
+    datafolder_path = Path ("data")
     raw_folder = datafolder_path / "raw"
     raw_folder.mkdir(parents=True, exist_ok=True)
     raw_csv = raw_folder / f"spectra_{today_date}.csv"

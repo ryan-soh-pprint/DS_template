@@ -42,8 +42,8 @@ if __name__ == "__main__":
 
     today_date = datetime.now().strftime("%y%m%d")
 
-    datafolder_path = Path ("../data/")
+    datafolder_path = Path ("data")
     raw_folder = datafolder_path / "raw"
     raw_folder.mkdir(parents=True, exist_ok=True)
-    raw_csv = raw_folder / f"label_{today_date}.csv"
+    raw_csv = raw_folder / f"label_num_{today_date}.csv"
     info_df.to_csv(raw_csv)
