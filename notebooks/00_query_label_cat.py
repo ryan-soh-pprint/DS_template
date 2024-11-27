@@ -33,15 +33,9 @@ WHERE lot.company_id = 1269 and product_type.name = "Palm Sugar" and lot.name LI
 """
 
 if __name__ == "__main__":
-    SPECTRA_COLS = [
-        "raw_data",
-        "dark_ref_data",
-        "white_ref_data",
-        "dark_ref_scan_time",
-        "white_ref_scan_time",
-    ]
+
     db_conn = PFDBConnector()
-    info_df = db_conn.query(PF_KEY_PATH, PF_SQL_PASSWORD, BASE_QUERY)
+    info_df = db_conn.query(PF_KEY_PATH, PF_SQL_PASSWORD, BASE_QUERY).set_index("lot_id")
     print("successful query")
     today_date = datetime.now().strftime("%y%m%d")
 
