@@ -11,87 +11,79 @@ class HierarchicalClassifier(BaseEstimator):
         Initialize the hierarchical classifier with two models and label encoder.
         
         Parameters:
-        check_reject_model: A custom model or scikit-learn model to predict 'Check' or 'Reject'.
-        pass_mild_model: A custom model or scikit-learn model to predict '1-Pass' or '2-Mild' if 'Check'.
+        pass_defect_model: A custom model or scikit-learn model to predict 'Pass' or 'Defect'.
+        mild_rancid_model: A custom model or scikit-learn model to predict '3-Rancid' or '2-Mild' if 'Defect'.
         mapping: mapping from encoder that is created outside and should be passed to the class object
             use the following:
                 mapping = dict(zip(encoder.classes_, encoder.transform(encoder.classes_)))
 
         """
 
-        # self.check_reject_model = AutoML_v4(
-        #     task_type = "classify", 
-        #     criteria = "test_precision_micro", 
-        #     exploration_runs=100, 
-        #     exploitation_runs=200
-        #     )
-
-        # self.pass_mild_model = AutoML_v4(
-        #     task_type = "classify", 
-        #     criteria = "test_balanced_accuracy", 
-        #     exploration_runs=100, 
-        #     exploitation_runs=200
-        #     )
-
-        ### testing
-        self.check_reject_model = AutoML_v4(
+        self.pass_defect_model = AutoML_v4(
             task_type = "classify", 
-            criteria = "test_precision_micro", 
-            exploration_runs=5, 
-            exploitation_runs=5
             )
 
-        self.pass_mild_model = AutoML_v4(
+        self.mild_rancid_model = AutoML_v4(
             task_type = "classify", 
-            criteria = "test_balanced_accuracy", 
-            exploration_runs=5, 
-            exploitation_runs=5
             )
-        ###
+
+        # ## testing
+        # self.pass_defect_model = AutoML_v4(
+        #     task_type = "classify", 
+        #     exploration = 5, 
+        #     exploitation = 5
+        #     )
+
+        # self.mild_rancid_model = AutoML_v4(
+        #     task_type = "classify", 
+        #     exploration = 5, 
+        #     exploitation = 5
+        #     )
+        # ##
 
         self.mapping = mapping # created outside
 
-        self.check_reject_pipeline = None if "check_reject_pipeline" not in kwargs else kwargs["check_reject_pipeline"]
-        self.pass_mild_pipeline = None if "pass_mild_pipeline" not in kwargs else kwargs["pass_mild_pipeline"]
+        self.pass_defect_pipeline = None if "pass_defect_pipeline" not in kwargs else kwargs["pass_defect_pipeline"]
+        self.mild_rancid_pipeline = None if "mild_rancid_pipeline" not in kwargs else kwargs["mild_rancid_pipeline"]
 
-        self.check_reject_trainer = None if "check_reject_trainer" not in kwargs else kwargs["check_reject_trainer"]
-        self.pass_mild_trainer = None if "pass_mild_trainer" not in kwargs else kwargs["pass_mild_trainer"]
+        self.pass_defect_trainer = None if "pass_defect_trainer" not in kwargs else kwargs["pass_defect_trainer"]
+        self.mild_rancid_trainer = None if "mild_rancid_trainer" not in kwargs else kwargs["mild_rancid_trainer"]
 
         self.automl_fitted = False if "automl_fitted" not in kwargs else kwargs["automl_fitted"]
 
     def relabel_data(self, X, y):
-        # Convert y-labels into binary labels (0 = Check, 1 = Reject) for first model and fit model
-        reject_label = self.mapping['3-Rancid']
-        y_check_reject = pd.Series(np.where(y == reject_label, 1, 0),
-                                  index = y.index)  # 0 = Check, 1 = Reject
+        # Convert y-labels into binary labels (0 = Pass, 1 = Defect) for first model and fit model
+        pass_label = self.mapping['1-Pass']
+        y_pass_defect = pd.Series(np.where(y == pass_label, 0, 1),
+                                  index = y.index)  # 0 = Pass, 1 = Defect
         
-        # Fit the second model (1-Pass/2-Mild) on 'Check' samples
-        check_indices = y.index[np.where(y_check_reject == 0)[0]]
-        X_check = X.loc[check_indices]
-        y_check = y.loc[check_indices]  # These labels are still the original encoded (numeric) labels
+        # Fit the second model (2-Mild/3-Rancid) on 'Defect' samples
+        defect_indices = y.index[np.where(y_pass_defect == 1)[0]]
+        X_check = X.loc[defect_indices]
+        y_check = y.loc[defect_indices]  # These labels are still the original encoded (numeric) labels
 
-        return y_check_reject, X_check, y_check
+        return y_pass_defect, X_check, y_check
     
     def _fit(self, X, y):
 
         """
-        Fit the check_reject model on the dataset and the Pass/Mild model on 'Check' samples.
+        Fit the pass_defect model on the dataset and the Pass/Mild model on 'Check' samples.
         
         Parameters:
         X: Features for training.
         y: Labels for training. Should have been encoded.
         """
 
-        y_check_reject, X_check, y_check = self.relabel_data(X, y)
+        y_pass_defect, X_check, y_check = self.relabel_data(X, y)
 
-        self.check_reject_model.fit(X, y_check_reject, kfold=StratifiedGroupKFold(n_splits=5))     
-        self.pass_mild_model.fit(X_check, y_check, kfold=StratifiedGroupKFold(n_splits=5))
+        self.pass_defect_model.fit(X, y_pass_defect)     
+        self.mild_rancid_model.fit(X_check, y_check)
         
-        self.check_reject_trainer = self.check_reject_model
-        self.pass_mild_trainer = self.pass_mild_model
+        self.pass_defect_trainer = self.pass_defect_model
+        self.mild_rancid_trainer = self.mild_rancid_model
 
-        self.check_reject_pipeline = self.check_reject_model.get_pipeline()
-        self.pass_mild_pipeline = self.pass_mild_model.get_pipeline()
+        self.pass_defect_pipeline = self.pass_defect_model.get_pipeline()
+        self.mild_rancid_pipeline = self.mild_rancid_model.get_pipeline()
 
         self.automl_fitted = True
 
@@ -103,44 +95,61 @@ class HierarchicalClassifier(BaseEstimator):
         if not self.automl_fitted:
             self._fit(X, y)
 
-        y_check_reject, X_check, y_check = self.relabel_data(X, y)
+        y_pass_defect, X_check, y_check = self.relabel_data(X, y)
 
-        self.check_reject_pipeline.fit(X, y_check_reject)
-        self.pass_mild_pipeline.fit(X_check, y_check)
+        self.pass_defect_pipeline.fit(X, y_pass_defect)
+        self.mild_rancid_pipeline.fit(X_check, y_check)
 
         return self
 
     def predict(self, X, threshold = 0.5):
 
         # Adjusted threshold for Reject
-        y_probs = self.check_reject_pipeline.predict_proba(X)[:, 1]  # Probabilities for the 'Reject' class
+        y_probs = self.pass_defect_pipeline.predict_proba(X)[:, 0]  # Probabilities for the 'Pass' class
         new_threshold = threshold  # taken as input
-        check_reject_pred = np.where(y_probs >= new_threshold, 1, 0) # 0 = Check, 1 = Reject
+        pass_defect_pred = np.where(y_probs >= new_threshold, 0, 1) # 0 = Pass, 1 = Defect
         
         # Record Reject values and pass Check to second model
         final_preds = []
-        for i, pred in enumerate(check_reject_pred):
-            if pred == 1:
-                final_preds.append(2)  # encoded 3-Rancid
+        for i, pred in enumerate(pass_defect_pred):
+            if pred == 0:
+                final_preds.append(0)  # encoded 1-Pass
             else:
-                # If Check (0), use the second model to predict between 1-Pass and 2-Mild
-                pass_mild_pred = self.pass_mild_pipeline.predict(X.reset_index().drop(columns=['lot_id']).iloc[[i]])
-                final_preds.append(pass_mild_pred[0])
+                # If Defect (1), use the second model to predict between 2-Mild/3-Rancid
+                mild_rancid_pred = self.mild_rancid_pipeline.predict(X.reset_index().drop(columns=['lot_id']).iloc[[i]])
+                final_preds.append(mild_rancid_pred[0])
         
         return np.array(final_preds)
     
     def predict_proba(self, X):
-        # Predict probabilities
-        y_probs = self.check_reject_pipeline.predict_proba(X)[:, 1]  # Probabilities for the 'Reject' class
+        """
+        Predict class probabilities for each label: Pass, Mild, Rancid.
+        """
+        # Step 1: Get probability estimates from pass_defect_pipeline
+        pass_defect_probs = self.pass_defect_pipeline.predict_proba(X)
+        P_Pass = pass_defect_probs[:, 0]  # Probability of Pass
+        P_Defect = pass_defect_probs[:, 1]  # Probability of Defect
+
+        # Step 2: Identify Defect samples and get probabilities from mild_rancid_pipeline
+        defect_indices = np.where(P_Defect > 0.5)[0]  # Consider samples where Defect is likely
+        P_Mild = np.zeros_like(P_Pass)
+        P_Rancid = np.zeros_like(P_Pass)
+
+        P_Mild = self.mild_rancid_pipeline.predict_proba(X)[:, 0]
+        P_Rancid = self.mild_rancid_pipeline.predict_proba(X)[:, 1]
+
+        # Step 3: Compute final probabilities
+        P_Mild = P_Defect * P_Mild  # P(Mild) = P(Defect) * P(Mild | Defect)
+        P_Rancid = P_Defect * P_Rancid  # P(Rancid) = P(Defect) * P(Rancid | Defect)
         
-        return np.array(y_probs)
+        return np.column_stack((P_Pass, P_Mild, P_Rancid))
     
     def get_params(self, deep = False):
         return {
-            "check_reject_trainer": self.check_reject_trainer,
-            "pass_mild_trainer": self.pass_mild_trainer,
-            "check_reject_pipeline": self.check_reject_pipeline,
-            "pass_mild_pipeline": self.pass_mild_pipeline,
+            "pass_defect_trainer": self.pass_defect_trainer,
+            "mild_rancid_trainer": self.mild_rancid_trainer,
+            "pass_defect_pipeline": self.pass_defect_pipeline,
+            "mild_rancid_pipeline": self.mild_rancid_pipeline,
             "automl_fitted": self.automl_fitted,
             "mapping" : self.mapping
         }
@@ -148,3 +157,86 @@ class HierarchicalClassifier(BaseEstimator):
     def set_params(self, params):
         for param, value in params.items():
             self.__setattr__(param, value)
+
+    class PipelineWrapper:
+        def __init__(self, pass_defect_pipeline, mild_rancid_pipeline, mapping, **kwargs):
+            self.pass_defect_pipeline = pass_defect_pipeline
+            self.mild_rancid_pipeline = mild_rancid_pipeline
+            self.mapping = mapping
+
+        def relabel_data(self, X, y):
+            # Convert y-labels into binary labels (0 = Pass, 1 = Defect) for first model and fit model
+            pass_label = self.mapping['1-Pass']
+            y_pass_defect = pd.Series(np.where(y == pass_label, 0, 1),
+                                    index = y.index)  # 0 = Pass, 1 = Defect
+            
+            # Fit the second model (2-Mild/3-Rancid) on 'Defect' samples
+            defect_indices = y.index[np.where(y_pass_defect == 1)[0]]
+            X_check = X.loc[defect_indices]
+            y_check = y.loc[defect_indices]  # These labels are still the original encoded (numeric) labels
+
+            return y_pass_defect, X_check, y_check
+
+        def fit(self, X, y):
+            y_pass_defect, X_check, y_check = self.relabel_data(X, y)
+
+            self.pass_defect_pipeline.fit(X, y_pass_defect)
+            self.mild_rancid_pipeline.fit(X_check, y_check)
+
+            return self
+
+        def predict(self, X, threshold = 0.5):
+
+            # Adjusted threshold for Reject
+            y_probs = self.pass_defect_pipeline.predict_proba(X)[:, 0]  # Probabilities for the 'Pass' class
+            new_threshold = threshold  # taken as input
+            pass_defect_pred = np.where(y_probs >= new_threshold, 0, 1) # 0 = Pass, 1 = Defect
+            
+            # Record Reject values and pass Check to second model
+            final_preds = []
+            for i, pred in enumerate(pass_defect_pred):
+                if pred == 0:
+                    final_preds.append(0)  # encoded 1-Pass
+                else:
+                    # If Defect (1), use the second model to predict between 2-Mild/3-Rancid
+                    mild_rancid_pred = self.mild_rancid_pipeline.predict(X.reset_index().drop(columns=['lot_id']).iloc[[i]])
+                    final_preds.append(mild_rancid_pred[0])
+            
+            return np.array(final_preds)
+        
+        def predict_proba(self, X):
+            """
+            Predict class probabilities for each label: Pass, Mild, Rancid.
+            """
+            # Step 1: Get probability estimates from pass_defect_pipeline
+            pass_defect_probs = self.pass_defect_pipeline.predict_proba(X)
+            P_Pass = pass_defect_probs[:, 0]  # Probability of Pass
+            P_Defect = pass_defect_probs[:, 1]  # Probability of Defect
+
+            # Step 2: Identify Defect samples and get probabilities from mild_rancid_pipeline
+            defect_indices = np.where(P_Defect > 0.5)[0]  # Consider samples where Defect is likely
+            P_Mild = np.zeros_like(P_Pass)
+            P_Rancid = np.zeros_like(P_Pass)
+
+            P_Mild = self.mild_rancid_pipeline.predict_proba(X)[:, 0]
+            P_Rancid = self.mild_rancid_pipeline.predict_proba(X)[:, 1]
+
+            # Step 3: Compute final probabilities
+            P_Mild = P_Defect * P_Mild  # P(Mild) = P(Defect) * P(Mild | Defect)
+            P_Rancid = P_Defect * P_Rancid  # P(Rancid) = P(Defect) * P(Rancid | Defect)
+            
+            return np.column_stack((P_Pass, P_Mild, P_Rancid))
+
+        def get_params(self, deep = False):
+            return {
+                "pass_defect_pipeline": self.pass_defect_pipeline,
+                "mild_rancid_pipeline": self.mild_rancid_pipeline,
+                "mapping" : self.mapping
+            }
+
+        def set_params(self, params):
+            for param, value in params.items():
+                self.__setattr__(param, value)
+
+    def get_pipeline(self):
+        return self.PipelineWrapper(self.pass_defect_pipeline, self.mild_rancid_pipeline, self.mapping)
