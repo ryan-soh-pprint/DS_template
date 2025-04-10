@@ -10,7 +10,7 @@ PF_SQL_PASSWORD = os.environ.get("PLATFORM_SQL_PASSWORD", None)  # CN_SQL_PASSWO
 PF_KEY_PATH = os.environ.get("DS_SERVER_KEYPATH", None)  # CN_SERVER_KEYPATH
 PF_EFS_URL = os.environ.get("PF_EFS_URL", None)  # CN_EFS_URL
 
-batch = 4657
+# batch = 4720
 BASE_QUERY = f"""
 SELECT
 	sp.id AS specimen_id,
@@ -23,8 +23,8 @@ FROM
 	INNER JOIN lot l ON l.id = sp.lot_id
     INNER JOIN lot_batch_bridge br on br.lot_id = l.id
 WHERE
-	# l.company_id = 1086
-    br.lot_batch_id = {batch}
+	# l.company_id = 1243
+    br.lot_batch_id IN (4720, 4799)
 
 ORDER BY
 	l.created_dt;
@@ -58,6 +58,6 @@ if __name__ == "__main__":
 
     datafolder_path = Path ("data/raw")
     datafolder_path.mkdir(parents=True, exist_ok=True)
-    raw_csv = datafolder_path / f"batch_{batch}_{today_date}.csv"
+    raw_csv = datafolder_path / f"spectra_batch_{today_date}.csv"
     joined_df.to_csv(raw_csv)
 
