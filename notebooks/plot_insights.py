@@ -150,7 +150,7 @@ def auto_subplot_grid(n):
     return rows, cols
 
 
-def plot_radar_charts(df, categories=None, colors=None, titles=None, correct=None, fig_title=None):
+def plot_radar_charts(df, categories=None, colors=None, titles=None, correct=None, fig_title=None, top_space = 0.95):
     """
     df: DataFrame containing specimen level predictions
     categories: List of radar chart categories
@@ -158,6 +158,7 @@ def plot_radar_charts(df, categories=None, colors=None, titles=None, correct=Non
     titles: List of chart titles
     correct: Dictionary mapping lot_id to boolean for background coloring
     fig_title: Title for the entire figure
+    top_space: Space above the subplots
     """
     if categories is None:
         categories = df.columns.tolist()
@@ -199,7 +200,7 @@ def plot_radar_charts(df, categories=None, colors=None, titles=None, correct=Non
         fig.delaxes(axs[j])
 
     plt.tight_layout()
-    plt.subplots_adjust(top=0.95)  # or another value < 1
+    plt.subplots_adjust(top=top_space)  # or another value < 1
     fig.suptitle(fig_title, fontsize=16)
 
     return fig
