@@ -17,6 +17,7 @@ ipykernel
 matplotlib == 3.7.2
 optuna==3.6.1
 jupyter
+scikit-multilearn
 
 pptoolbox[full]@git+ssh://git@github.com/ProfilePrint-Science/profileprint-toolbox.git@1.3.2
 
