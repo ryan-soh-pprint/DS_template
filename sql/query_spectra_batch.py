@@ -23,11 +23,9 @@ FROM
 	INNER JOIN lot l ON l.id = sp.lot_id
     INNER JOIN lot_batch_bridge br on br.lot_id = l.id
 WHERE
-	# l.company_id = 1243
-    br.lot_batch_id IN (4720, 4799)
-
+    br.lot_batch_id IN (4944,5027)
 ORDER BY
-	l.created_dt;
+	l.id;
 """
 
 
