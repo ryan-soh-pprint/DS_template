@@ -15,40 +15,10 @@ PF_EFS_URL = os.environ.get("PF_EFS_URL", None)  # PP_EFS_URL
 
 print(PF_SQL_PASSWORD,PF_KEY_PATH,PF_EFS_URL)
 
-# samples up to 240927
-BASE_QUERY = """
-SELECT lnpv.lot_id, lot.name as lot_name, 
-	   property.name as property_name,
-       lnpv.value as property_value,
-       lot.company_id,
-       lot.product_type_id,
-       product_type.name as product_name
-FROM lot_numerical_property_value lnpv
-INNER JOIN lot on lot.id = lnpv.lot_id
-INNER JOIN numerical_property on numerical_property.id = lnpv.numerical_property_id
-INNER JOIN property on numerical_property.property_id = property.id
-INNER JOIN product_type on product_type.id = lot.product_type_id
-WHERE lot.company_id = 1086
-AND product_type.name LIKE "%Orange Italy%"
 
-UNION ALL
+with open("sql/sql_label.sql", "r") as file:
+    BASE_QUERY = file.read()
 
-SELECT lopv.lot_id, lot.name as lot_name, 
-	   property.name as property_name,
-       lopv.value as property_value,
-       lot.company_id,
-       lot.product_type_id,
-       product_type.name as product_name
-FROM lot_option_property_value lopv
-INNER JOIN lot on lot.id = lopv.lot_id
-INNER JOIN option_property on option_property.id = lopv.option_property_id
-INNER JOIN property on option_property.property_id = property.id
-INNER JOIN product_type on product_type.id = lot.product_type_id
-WHERE lot.company_id = 1086
-AND product_type.name LIKE "%Orange Italy%"
-
-ORDER BY lot_id
-"""
 
 if __name__ == "__main__":
 
@@ -59,6 +29,7 @@ if __name__ == "__main__":
 
     datafolder_path = Path ("data")
     raw_folder = datafolder_path / "raw"
-    raw_folder.mkdir(parents=True, exist_ok=True)
-    raw_csv = raw_folder / f"label_cat_{today_date}.csv"
+    pull_folder = raw_folder / f"pulled_{today_date}"
+    pull_folder.mkdir(parents=True, exist_ok=True)
+    raw_csv = raw_folder / f"label_{today_date}.csv"
     info_df.to_csv(raw_csv)

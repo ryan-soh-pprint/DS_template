@@ -15,24 +15,10 @@ PF_EFS_URL = os.environ.get("PF_EFS_URL", None)  # PP_EFS_URL
 
 print(PF_SQL_PASSWORD,PF_KEY_PATH,PF_EFS_URL)
 
-# samples up to 240927
-BASE_QUERY = """
-SELECT
-	sp.id AS specimen_id,
-	l.id AS lot_id,
-	l.name AS lot_name,
-	sp.date_scanned,
-	sp.analyzer_id AS analyser_id,
-    l.company_id as company_id,
-	p.id AS product_id,
-    p.name AS product_name
-FROM
-	specimen sp
-	INNER JOIN lot l ON l.id = sp.lot_id
-	INNER JOIN product_type p on l.product_type_id = p.id
-WHERE l.company_id = 1313
-ORDER BY l.name;
-"""
+
+with open("sql/sql_spectra.sql", "r") as file:
+    BASE_QUERY = file.read()
+
 
 if __name__ == "__main__":
  
@@ -63,6 +49,7 @@ if __name__ == "__main__":
 
     datafolder_path = Path ("data")
     raw_folder = datafolder_path / "raw"
-    raw_folder.mkdir(parents=True, exist_ok=True)
+    pull_folder = raw_folder / f"pulled_{today_date}"
+    pull_folder.mkdir(parents=True, exist_ok=True)
     raw_csv = raw_folder / f"spectra_{today_date}.csv"
     joined_df.to_csv(raw_csv)
